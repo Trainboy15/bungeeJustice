@@ -5,6 +5,7 @@ import net.md_5.bungee.api.plugin.Plugin;
 public class main extends Plugin {
     private PunishmentManager punishmentManager;
     private MessageConfig messageConfig;
+    private OfflineNameResolver nameResolver;
 
     @Override
     public void onEnable() {
@@ -12,8 +13,9 @@ public class main extends Plugin {
 	punishmentManager.load();
 	messageConfig = new MessageConfig(this);
 	messageConfig.load();
+	nameResolver = new OfflineNameResolver(this);
 
-	getProxy().getPluginManager().registerListener(this, new PunishmentListener(punishmentManager, messageConfig));
+	getProxy().getPluginManager().registerListener(this, new PunishmentListener(punishmentManager, messageConfig, nameResolver));
 
 	getProxy().getPluginManager().registerCommand(this,
 		new PunishCommand("ban", "bungeejustice.ban", punishmentManager, messageConfig, PunishmentType.BAN, false, false));
@@ -42,8 +44,16 @@ public class main extends Plugin {
 		new PunishCommand("tempipmute", "bungeejustice.tempipmute", punishmentManager, messageConfig, PunishmentType.IP_MUTE, true, true));
 	getProxy().getPluginManager().registerCommand(this,
 		new UnpunishCommand("unipmute", "bungeejustice.unipmute", punishmentManager, messageConfig, PunishmentType.IP_MUTE, true));
+
 	getProxy().getPluginManager().registerCommand(this,
-		new BanListCommand(punishmentManager, messageConfig));
+		new KickCommand(punishmentManager, messageConfig, nameResolver));
+	getProxy().getPluginManager().registerCommand(this,
+		new WarnCommand(punishmentManager, messageConfig, nameResolver));
+	getProxy().getPluginManager().registerCommand(this,
+		new NoteCommand(punishmentManager, messageConfig, nameResolver));
+
+	getProxy().getPluginManager().registerCommand(this,
+		new BanListCommand(punishmentManager, messageConfig, nameResolver));
 	getProxy().getPluginManager().registerCommand(this,
 		new BungeeJusticeCommand(messageConfig));
 
@@ -54,6 +64,9 @@ public class main extends Plugin {
     public void onDisable() {
 	if (punishmentManager != null) {
 	    punishmentManager.save();
+	}
+	if (nameResolver != null) {
+	    nameResolver.save();
 	}
     }
 }

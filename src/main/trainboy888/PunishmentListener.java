@@ -4,6 +4,7 @@ import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.ChatEvent;
 import net.md_5.bungee.api.event.LoginEvent;
+import net.md_5.bungee.api.event.PostLoginEvent;
 import net.md_5.bungee.event.EventHandler;
 import net.md_5.bungee.api.plugin.Listener;
 
@@ -13,10 +14,12 @@ import java.util.UUID;
 public class PunishmentListener implements Listener {
     private final PunishmentManager manager;
     private final MessageConfig messageConfig;
+    private final OfflineNameResolver nameResolver;
 
-    public PunishmentListener(PunishmentManager manager, MessageConfig messageConfig) {
+    public PunishmentListener(PunishmentManager manager, MessageConfig messageConfig, OfflineNameResolver nameResolver) {
         this.manager = manager;
         this.messageConfig = messageConfig;
+        this.nameResolver = nameResolver;
     }
 
     @EventHandler
@@ -32,6 +35,12 @@ public class PunishmentListener implements Listener {
             event.setCancelled(true);
             event.setCancelReason(new TextComponent(formatMessage(effectiveBan)));
         }
+    }
+
+    @EventHandler
+    public void onPostLogin(PostLoginEvent event) {
+        // Cache the player name for offline name resolution
+        nameResolver.cachePlayer(event.getPlayer().getUniqueId(), event.getPlayer().getName());
     }
 
     @EventHandler

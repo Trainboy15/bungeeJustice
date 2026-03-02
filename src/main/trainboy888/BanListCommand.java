@@ -12,11 +12,13 @@ import java.util.UUID;
 public class BanListCommand extends Command {
     private final PunishmentManager punishmentManager;
     private final MessageConfig messageConfig;
+    private final OfflineNameResolver nameResolver;
 
-    public BanListCommand(PunishmentManager punishmentManager, MessageConfig messageConfig) {
+    public BanListCommand(PunishmentManager punishmentManager, MessageConfig messageConfig, OfflineNameResolver nameResolver) {
         super("banlist", "bungeejustice.banlist");
         this.punishmentManager = punishmentManager;
         this.messageConfig = messageConfig;
+        this.nameResolver = nameResolver;
     }
 
     @Override
@@ -26,50 +28,71 @@ public class BanListCommand extends Command {
             return;
         }
 
-        Map<UUID, Punishment> playerBans = punishmentManager.getActivePlayerBans();
-        Map<String, Punishment> ipBans = punishmentManager.getActiveIpBans();
-        int total = playerBans.size() + ipBans.size();
-
-        if (total == 0) {
-            sender.sendMessage(new TextComponent(messageConfig.get("messages.banlist-empty")));
+        // If they provide an ID, look up that specific punishment
+        if (args.length > 0) {
+            String id = args[0];
+            Punishment punishment = punishmentManager.getById(id);
+            if (punishment == null) {
+                sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.punishment-not-found", Map.of("id", id))));
+                return;
+            }
+            
+            sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.punishment-info", Map.of(
+                    "id", punishment.getId(),
+                    "type", getPunishmentTypeName(punishment.getType()),
+                    "reason", punishment.getReason(),
+                    "actor", punishment.getActor(),
+                    "created", formatTime(punishment.getCreatedAt()),
+                    "duration", formatDuration(punishment)
+            ))));
             return;
         }
 
-        sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.banlist-header", Map.of(
-                "count", String.valueOf(total)
-        ))));
+        // Show all active punishments
+        Map<String, Punishment> allPunishments = punishmentManager.getAllPunishments();
 
-        if (!playerBans.isEmpty()) {
-            sender.sendMessage(new TextComponent(messageConfig.get("messages.banlist-player-section")));
-            for (Map.Entry<UUID, Punishment> entry : playerBans.entrySet()) {
-                String target = resolveName(entry.getKey());
-                Punishment punishment = entry.getValue();
-                sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.banlist-player-entry", Map.of(
-                        "target", target,
-                        "reason", punishment.getReason(),
-                        "actor", punishment.getActor(),
-                        "duration", formatDuration(punishment)
-                ))));
-            }
+        if (allPunishments.isEmpty()) {
+            sender.sendMessage(new TextComponent(messageConfig.get("messages.punishlist-empty")));
+            return;
         }
 
-        if (!ipBans.isEmpty()) {
-            sender.sendMessage(new TextComponent(messageConfig.get("messages.banlist-ip-section")));
-            for (Map.Entry<String, Punishment> entry : ipBans.entrySet()) {
-                Punishment punishment = entry.getValue();
-                sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.banlist-ip-entry", Map.of(
-                        "target", entry.getKey(),
-                        "reason", punishment.getReason(),
-                        "actor", punishment.getActor(),
-                        "duration", formatDuration(punishment)
-                ))));
-            }
+        sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.punishlist-header", Map.of(
+                "count", String.valueOf(allPunishments.size())
+        ))));
+
+        for (Map.Entry<String, Punishment> entry : allPunishments.entrySet()) {
+            Punishment punishment = entry.getValue();
+            String typeDisplayName = getPunishmentTypeName(punishment.getType());
+            
+            sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.punishlist-entry", Map.of(
+                    "id", punishment.getId(),
+                    "type", typeDisplayName,
+                    "reason", punishment.getReason(),
+                    "actor", punishment.getActor(),
+                    "duration", formatDuration(punishment)
+            ))));
         }
     }
 
-    private String resolveName(UUID uuid) {
-        ProxiedPlayer player = ProxyServer.getInstance().getPlayer(uuid);
-        return player != null ? player.getName() : uuid.toString();
+    private String getPunishmentTypeName(PunishmentType type) {
+        switch (type) {
+            case BAN:
+                return "Ban";
+            case MUTE:
+                return "Mute";
+            case IP_BAN:
+                return "IP Ban";
+            case IP_MUTE:
+                return "IP Mute";
+            case KICK:
+                return "Kick";
+            case WARN:
+                return "Warn";
+            case NOTE:
+                return "Note";
+            default:
+                return "Unknown";
+        }
     }
 
     private String formatDuration(Punishment punishment) {
@@ -79,5 +102,9 @@ public class BanListCommand extends Command {
 
         long remaining = Math.max(0L, punishment.getExpiresAt() - System.currentTimeMillis());
         return DurationParser.formatDuration(remaining);
+    }
+
+    private String formatTime(long timestamp) {
+        return new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(timestamp));
     }
 }
