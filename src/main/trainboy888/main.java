@@ -17,41 +17,43 @@ public class main extends Plugin {
 
 	getProxy().getPluginManager().registerListener(this, new PunishmentListener(punishmentManager, messageConfig, nameResolver));
 
+	// Ban commands
 	getProxy().getPluginManager().registerCommand(this,
 		new PunishCommand("ban", "bungeejustice.ban", punishmentManager, messageConfig, PunishmentType.BAN, false, false));
 	getProxy().getPluginManager().registerCommand(this,
 		new PunishCommand("tempban", "bungeejustice.tempban", punishmentManager, messageConfig, PunishmentType.BAN, true, false));
-	getProxy().getPluginManager().registerCommand(this,
-		new UnpunishCommand("unban", "bungeejustice.unban", punishmentManager, messageConfig, PunishmentType.BAN, false));
 
+	// Mute commands
 	getProxy().getPluginManager().registerCommand(this,
 		new PunishCommand("mute", "bungeejustice.mute", punishmentManager, messageConfig, PunishmentType.MUTE, false, false));
 	getProxy().getPluginManager().registerCommand(this,
 		new PunishCommand("tempmute", "bungeejustice.tempmute", punishmentManager, messageConfig, PunishmentType.MUTE, true, false));
-	getProxy().getPluginManager().registerCommand(this,
-		new UnpunishCommand("unmute", "bungeejustice.unmute", punishmentManager, messageConfig, PunishmentType.MUTE, false));
 
+	// IP Ban commands
 	getProxy().getPluginManager().registerCommand(this,
 		new PunishCommand("ipban", "bungeejustice.ipban", punishmentManager, messageConfig, PunishmentType.IP_BAN, false, true));
 	getProxy().getPluginManager().registerCommand(this,
 		new PunishCommand("tempipban", "bungeejustice.tempipban", punishmentManager, messageConfig, PunishmentType.IP_BAN, true, true));
-	getProxy().getPluginManager().registerCommand(this,
-		new UnpunishCommand("unipban", "bungeejustice.unipban", punishmentManager, messageConfig, PunishmentType.IP_BAN, true));
 
+	// IP Mute commands
 	getProxy().getPluginManager().registerCommand(this,
 		new PunishCommand("ipmute", "bungeejustice.ipmute", punishmentManager, messageConfig, PunishmentType.IP_MUTE, false, true));
 	getProxy().getPluginManager().registerCommand(this,
 		new PunishCommand("tempipmute", "bungeejustice.tempipmute", punishmentManager, messageConfig, PunishmentType.IP_MUTE, true, true));
-	getProxy().getPluginManager().registerCommand(this,
-		new UnpunishCommand("unipmute", "bungeejustice.unipmute", punishmentManager, messageConfig, PunishmentType.IP_MUTE, true));
 
+	// Simple punishment commands (kick, warn, note)
 	getProxy().getPluginManager().registerCommand(this,
-		new KickCommand(punishmentManager, messageConfig, nameResolver));
+		new PunishCommand("kick", "bungeejustice.kick", punishmentManager, messageConfig, nameResolver, PunishmentType.KICK));
 	getProxy().getPluginManager().registerCommand(this,
-		new WarnCommand(punishmentManager, messageConfig, nameResolver));
+		new PunishCommand("warn", "bungeejustice.warn", punishmentManager, messageConfig, nameResolver, PunishmentType.WARN));
 	getProxy().getPluginManager().registerCommand(this,
-		new NoteCommand(punishmentManager, messageConfig, nameResolver));
+		new PunishCommand("note", "bungeejustice.note", punishmentManager, messageConfig, nameResolver, PunishmentType.NOTE));
 
+	// Single unified unpunish command
+	getProxy().getPluginManager().registerCommand(this,
+		new UnpunishCommand(punishmentManager, messageConfig));
+
+	// Utility commands
 	getProxy().getPluginManager().registerCommand(this,
 		new BanListCommand(punishmentManager, messageConfig, nameResolver));
 	getProxy().getPluginManager().registerCommand(this,

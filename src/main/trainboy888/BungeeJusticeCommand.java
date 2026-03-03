@@ -20,7 +20,16 @@ public class BungeeJusticeCommand extends Command {
             sender.sendMessage(new TextComponent(messageConfig.get("messages.no-permission")));
             return;
         }
-
+        if (args.length == 0) {
+            sender.sendMessage(new TextComponent(messageConfig.get("messages.help-header")));
+            sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.help-punish", Map.of("command", "ban/mute/ipban/ipmute"))));
+            sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.help-temp-punish", Map.of("command", "tempban/tempmute/tempipban/tempipmute"))));
+            sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.help-unpunish-id", Map.of("command", "unpunish"))));
+            sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.help-kick", Map.of("command", "kick"))));
+            sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.help-warn", Map.of("command", "warn"))));
+            sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.help-note", Map.of("command", "note"))));
+            return;
+        }
         if (args.length != 1 || !args[0].equalsIgnoreCase("reload")) {
             sender.sendMessage(new TextComponent(messageConfig.get("messages.usage-reload")));
             return;

@@ -26,10 +26,23 @@ public class PunishmentManager {
     private final Map<String, Punishment> ipBans = new HashMap<>();
     private final Map<String, Punishment> ipMutes = new HashMap<>();
     private final Map<String, Punishment> allPunishmentsById = new HashMap<>();
+    
+    // Track which map and key each punishment ID belongs to
+    private final Map<String, PunishmentLocation> punishmentLocations = new HashMap<>();
 
     public PunishmentManager(Plugin plugin) {
         this.plugin = plugin;
         this.file = new File(plugin.getDataFolder(), "punishments.yml");
+    }
+    
+    private static class PunishmentLocation {
+        final PunishmentType type;
+        final Object key; // UUID or String (for IP)
+        
+        PunishmentLocation(PunishmentType type, Object key) {
+            this.type = type;
+            this.key = key;
+        }
     }
 
     public void load() {
@@ -83,17 +96,19 @@ public class PunishmentManager {
         }
 
         String id = parent.getString(node + ".id", generateId());
+        String target = parent.getString(node + ".target", key.toString());
         String reason = parent.getString(node + ".reason", "No reason provided");
         String actor = parent.getString(node + ".actor", "CONSOLE");
         long createdAt = parent.getLong(node + ".createdAt", System.currentTimeMillis());
         long expiresAt = parent.getLong(node + ".expiresAt", -1L);
 
         PunishmentType type = determineType(node, map == ipBans || map == ipMutes);
-        Punishment punishment = new Punishment(id, type, reason, actor, createdAt, expiresAt);
+        Punishment punishment = new Punishment(id, type, target, reason, actor, createdAt, expiresAt);
 
         if (!punishment.isExpired()) {
             map.put(key, punishment);
             allPunishmentsById.put(id, punishment);
+            punishmentLocations.put(id, new PunishmentLocation(type, key));
         }
     }
 
@@ -184,6 +199,7 @@ public class PunishmentManager {
 
     private void writePunishment(Configuration section, String node, Punishment punishment) {
         section.set(node + ".id", punishment.getId());
+        section.set(node + ".target", punishment.getTarget());
         section.set(node + ".reason", punishment.getReason());
         section.set(node + ".actor", punishment.getActor());
         section.set(node + ".createdAt", punishment.getCreatedAt());
@@ -193,7 +209,7 @@ public class PunishmentManager {
     public void punishPlayer(UUID uuid, PunishmentType type, String reason, String actor, long durationMillis) {
         long expiresAt = durationMillis <= 0 ? -1L : System.currentTimeMillis() + durationMillis;
         String id = generateId();
-        Punishment punishment = new Punishment(id, type, reason, actor, System.currentTimeMillis(), expiresAt);
+        Punishment punishment = new Punishment(id, type, uuid.toString(), reason, actor, System.currentTimeMillis(), expiresAt);
 
         switch (type) {
             case BAN:
@@ -214,6 +230,7 @@ public class PunishmentManager {
         }
 
         allPunishmentsById.put(id, punishment);
+        punishmentLocations.put(id, new PunishmentLocation(type, uuid));
         
         // Only save persistent punishments (not kicks)
         if (type != PunishmentType.KICK) {
@@ -224,8 +241,8 @@ public class PunishmentManager {
     public void punishIp(String ip, PunishmentType type, String reason, String actor, long durationMillis) {
         long expiresAt = durationMillis <= 0 ? -1L : System.currentTimeMillis() + durationMillis;
         String id = generateId();
-        Punishment punishment = new Punishment(id, type, reason, actor, System.currentTimeMillis(), expiresAt);
         String normalized = normalizeIp(ip);
+        Punishment punishment = new Punishment(id, type, normalized, reason, actor, System.currentTimeMillis(), expiresAt);
 
         if (type == PunishmentType.IP_BAN) {
             ipBans.put(normalized, punishment);
@@ -234,36 +251,53 @@ public class PunishmentManager {
         }
 
         allPunishmentsById.put(id, punishment);
+        punishmentLocations.put(id, new PunishmentLocation(type, normalized));
         save();
     }
 
     public boolean unbanPlayer(UUID uuid) {
-        boolean removed = playerBans.remove(uuid) != null;
+        Punishment punishment = playerBans.remove(uuid);
+        boolean removed = punishment != null;
         if (removed) {
+            String id = punishment.getId();
+            allPunishmentsById.remove(id);
+            punishmentLocations.remove(id);
             save();
         }
         return removed;
     }
 
     public boolean unmutePlayer(UUID uuid) {
-        boolean removed = playerMutes.remove(uuid) != null;
+        Punishment punishment = playerMutes.remove(uuid);
+        boolean removed = punishment != null;
         if (removed) {
+            String id = punishment.getId();
+            allPunishmentsById.remove(id);
+            punishmentLocations.remove(id);
             save();
         }
         return removed;
     }
 
     public boolean unbanIp(String ip) {
-        boolean removed = ipBans.remove(normalizeIp(ip)) != null;
+        Punishment punishment = ipBans.remove(normalizeIp(ip));
+        boolean removed = punishment != null;
         if (removed) {
+            String id = punishment.getId();
+            allPunishmentsById.remove(id);
+            punishmentLocations.remove(id);
             save();
         }
         return removed;
     }
 
     public boolean unmuteIp(String ip) {
-        boolean removed = ipMutes.remove(normalizeIp(ip)) != null;
+        Punishment punishment = ipMutes.remove(normalizeIp(ip));
+        boolean removed = punishment != null;
         if (removed) {
+            String id = punishment.getId();
+            allPunishmentsById.remove(id);
+            punishmentLocations.remove(id);
             save();
         }
         return removed;
@@ -275,10 +309,41 @@ public class PunishmentManager {
             return false;
         }
 
-        // Remove from appropriate map - this is tricky since we don't know the key
-        // For now, we'll just remove from the ID map
-        save();
-        return true;
+        PunishmentLocation location = punishmentLocations.remove(id);
+        if (location == null) {
+            return false;
+        }
+
+        // Remove from the appropriate map
+        boolean removed = false;
+        switch (location.type) {
+            case BAN:
+                removed = playerBans.remove((UUID) location.key) != null;
+                break;
+            case MUTE:
+                removed = playerMutes.remove((UUID) location.key) != null;
+                break;
+            case KICK:
+                removed = playerKicks.remove((UUID) location.key) != null;
+                break;
+            case WARN:
+                removed = playerWarns.remove((UUID) location.key) != null;
+                break;
+            case NOTE:
+                removed = playerNotes.remove((UUID) location.key) != null;
+                break;
+            case IP_BAN:
+                removed = ipBans.remove((String) location.key) != null;
+                break;
+            case IP_MUTE:
+                removed = ipMutes.remove((String) location.key) != null;
+                break;
+        }
+
+        if (removed) {
+            save();
+        }
+        return removed;
     }
 
     public Punishment getById(String id) {
@@ -322,7 +387,10 @@ public class PunishmentManager {
             return null;
         }
         if (punishment.isExpired()) {
+            String id = punishment.getId();
             map.remove(key);
+            allPunishmentsById.remove(id);
+            punishmentLocations.remove(id);
             save();
             return null;
         }
@@ -335,7 +403,10 @@ public class PunishmentManager {
         while (iterator.hasNext()) {
             Map.Entry<T, Punishment> entry = iterator.next();
             if (entry.getValue().isExpired()) {
+                String id = entry.getValue().getId();
                 iterator.remove();
+                allPunishmentsById.remove(id);
+                punishmentLocations.remove(id);
                 changed = true;
             }
         }
@@ -351,7 +422,36 @@ public class PunishmentManager {
         while (iterator.hasNext()) {
             Map.Entry<String, Punishment> entry = iterator.next();
             if (entry.getValue().isExpired()) {
+                String id = entry.getKey();
                 iterator.remove();
+                
+                // Also remove from location tracking and specific maps
+                PunishmentLocation location = punishmentLocations.remove(id);
+                if (location != null) {
+                    switch (location.type) {
+                        case BAN:
+                            playerBans.remove((UUID) location.key);
+                            break;
+                        case MUTE:
+                            playerMutes.remove((UUID) location.key);
+                            break;
+                        case KICK:
+                            playerKicks.remove((UUID) location.key);
+                            break;
+                        case WARN:
+                            playerWarns.remove((UUID) location.key);
+                            break;
+                        case NOTE:
+                            playerNotes.remove((UUID) location.key);
+                            break;
+                        case IP_BAN:
+                            ipBans.remove((String) location.key);
+                            break;
+                        case IP_MUTE:
+                            ipMutes.remove((String) location.key);
+                            break;
+                    }
+                }
                 changed = true;
             }
         }

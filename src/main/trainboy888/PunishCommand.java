@@ -22,23 +22,43 @@ import java.util.UUID;
 public class PunishCommand extends Command implements TabExecutor {
     private final PunishmentManager manager;
     private final MessageConfig messageConfig;
+    private final OfflineNameResolver nameResolver;
     private final PunishmentType type;
     private final boolean temporary;
     private final boolean ipTarget;
 
+    // Constructor for IP-based and temporary punishments
     public PunishCommand(String name, String permission, PunishmentManager manager, MessageConfig messageConfig, PunishmentType type, boolean temporary, boolean ipTarget) {
         super(name, permission);
         this.manager = manager;
         this.messageConfig = messageConfig;
+        this.nameResolver = null;
         this.type = type;
         this.temporary = temporary;
         this.ipTarget = ipTarget;
+    }
+
+    // Constructor for simple player punishments (kick, warn, note)
+    public PunishCommand(String name, String permission, PunishmentManager manager, MessageConfig messageConfig, OfflineNameResolver nameResolver, PunishmentType type) {
+        super(name, permission);
+        this.manager = manager;
+        this.messageConfig = messageConfig;
+        this.nameResolver = nameResolver;
+        this.type = type;
+        this.temporary = false;
+        this.ipTarget = false;
     }
 
     @Override
     public void execute(CommandSender sender, String[] args) {
         if (!sender.hasPermission(getPermission())) {
             sender.sendMessage(new TextComponent(messageConfig.get("messages.no-permission")));
+            return;
+        }
+
+        // Handle kick, warn, note differently (requires online check for kick)
+        if (type == PunishmentType.KICK || type == PunishmentType.WARN || type == PunishmentType.NOTE) {
+            executeSimplePunishment(sender, args);
             return;
         }
 
@@ -104,6 +124,63 @@ public class PunishCommand extends Command implements TabExecutor {
         ))));
     }
 
+    private void executeSimplePunishment(CommandSender sender, String[] args) {
+        if (args.length < 1) {
+            String usageKey = "messages.usage-" + getName();
+            sender.sendMessage(new TextComponent(messageConfig.getFormatted(usageKey, Map.of("command", getName()))));
+            return;
+        }
+
+        UUID uuid = nameResolver.resolveUUID(args[0]);
+        if (uuid == null) {
+            sender.sendMessage(new TextComponent(messageConfig.get("messages.invalid-target-player")));
+            return;
+        }
+
+        String reason = args.length > 1
+                ? String.join(" ", Arrays.copyOfRange(args, 1, args.length))
+                : messageConfig.get("messages.default-reason");
+
+        String actor = sender.getName();
+
+        // For kick, check if player is online
+        if (type == PunishmentType.KICK) {
+            ProxiedPlayer online = ProxyServer.getInstance().getPlayer(uuid);
+            if (online == null) {
+                sender.sendMessage(new TextComponent(messageConfig.get("messages.player-not-online")));
+                return;
+            }
+
+            manager.punishPlayer(uuid, type, reason, actor, -1);
+            online.disconnect(new TextComponent(messageConfig.get("screens.kick")
+                    .replace("{reason}", reason)
+                    .replace("{actor}", actor)));
+
+            sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.kicked-player", Map.of(
+                    "target", online.getName()
+            ))));
+            return;
+        }
+
+        // For warn and note
+        manager.punishPlayer(uuid, type, reason, actor, -1);
+
+        String messageKey = type == PunishmentType.WARN ? "messages.warned-player" : "messages.noted-player";
+        sender.sendMessage(new TextComponent(messageConfig.getFormatted(messageKey, Map.of(
+                "target", nameResolver.resolveName(uuid)
+        ))));
+
+        // Notify player if online (only for warn)
+        if (type == PunishmentType.WARN) {
+            ProxiedPlayer online = ProxyServer.getInstance().getPlayer(uuid);
+            if (online != null) {
+                online.sendMessage(new TextComponent(messageConfig.get("screens.warn")
+                        .replace("{reason}", reason)
+                        .replace("{actor}", actor)));
+            }
+        }
+    }
+
     @Override
     public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
         if (!sender.hasPermission(getPermission())) {
@@ -114,7 +191,7 @@ public class PunishCommand extends Command implements TabExecutor {
             return suggestTargets(args[0]);
         }
 
-        if (temporary && args.length == 2) {
+        if (temporary && args.length == 2 && type != PunishmentType.KICK && type != PunishmentType.WARN && type != PunishmentType.NOTE) {
             return suggestDurations(args[1]);
         }
 
@@ -165,6 +242,10 @@ public class PunishCommand extends Command implements TabExecutor {
         try {
             return UUID.fromString(target);
         } catch (IllegalArgumentException ignored) {
+            // Not a UUID, try offline name resolver if available
+            if (nameResolver != null) {
+                return nameResolver.resolveUUID(target);
+            }
             return null;
         }
     }

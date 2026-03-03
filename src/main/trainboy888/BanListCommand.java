@@ -37,8 +37,11 @@ public class BanListCommand extends Command {
                 return;
             }
             
+            String targetDisplay = getTargetDisplay(punishment);
+            
             sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.punishment-info", Map.of(
                     "id", punishment.getId(),
+                    "player", targetDisplay,
                     "type", getPunishmentTypeName(punishment.getType()),
                     "reason", punishment.getReason(),
                     "actor", punishment.getActor(),
@@ -63,15 +66,33 @@ public class BanListCommand extends Command {
         for (Map.Entry<String, Punishment> entry : allPunishments.entrySet()) {
             Punishment punishment = entry.getValue();
             String typeDisplayName = getPunishmentTypeName(punishment.getType());
+            String targetDisplay = getTargetDisplay(punishment);
             
             sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.punishlist-entry", Map.of(
                     "id", punishment.getId(),
+                    "player", targetDisplay,
                     "type", typeDisplayName,
                     "reason", punishment.getReason(),
                     "actor", punishment.getActor(),
                     "duration", formatDuration(punishment)
             ))));
         }
+    }
+
+    private String getTargetDisplay(Punishment punishment) {
+        // Check if it's an IP punishment
+        if (punishment.getType() == PunishmentType.IP_BAN || punishment.getType() == PunishmentType.IP_MUTE) {
+            return punishment.getTarget(); // Return IP address directly
+        }
+        
+        // For player punishments, resolve UUID to name
+        UUID playerUUID = punishment.getPlayerUUID();
+        if (playerUUID != null) {
+            return nameResolver.resolveName(playerUUID);
+        }
+        
+        // Fallback to target string
+        return punishment.getTarget();
     }
 
     private String getPunishmentTypeName(PunishmentType type) {
@@ -84,8 +105,6 @@ public class BanListCommand extends Command {
                 return "IP Ban";
             case IP_MUTE:
                 return "IP Mute";
-            case KICK:
-                return "Kick";
             case WARN:
                 return "Warn";
             case NOTE:
