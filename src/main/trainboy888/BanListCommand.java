@@ -59,12 +59,23 @@ public class BanListCommand extends Command {
             return;
         }
 
+        // Count punishments excluding KICKs
+        long displayCount = allPunishments.values().stream()
+                .filter(p -> p.getType() != PunishmentType.KICK)
+                .count();
+
         sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.punishlist-header", Map.of(
-                "count", String.valueOf(allPunishments.size())
+                "count", String.valueOf(displayCount)
         ))));
 
         for (Map.Entry<String, Punishment> entry : allPunishments.entrySet()) {
             Punishment punishment = entry.getValue();
+            
+            // Skip KICK punishments
+            if (punishment.getType() == PunishmentType.KICK) {
+                continue;
+            }
+            
             String typeDisplayName = getPunishmentTypeName(punishment.getType());
             String targetDisplay = getTargetDisplay(punishment);
             
