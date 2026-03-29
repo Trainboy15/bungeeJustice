@@ -2,6 +2,7 @@ trainboy888/PunishmentListener.class
 trainboy888/main.class
 trainboy888/UnpunishCommand.class
 trainboy888/BanListCommand.class
+trainboy888/AuditLogger.class
 trainboy888/BungeeJusticeCommand.class
 trainboy888/OfflineNameResolver.class
 trainboy888/Punishment.class

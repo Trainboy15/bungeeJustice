@@ -38,7 +38,7 @@ public class UnpunishCommandTest extends CommandTestBase {
         unpunishCommand.execute(sender, args);
 
         assertMessageSent();
-        verify(punishmentManager, never()).removeById(anyString());
+        verify(punishmentManager, never()).removeById(anyString(), anyString());
     }
 
     @Test
@@ -49,30 +49,30 @@ public class UnpunishCommandTest extends CommandTestBase {
         unpunishCommand.execute(sender, args);
 
         assertMessageSent();
-        verify(punishmentManager, never()).removeById("999");
+        verify(punishmentManager, never()).removeById("999", TEST_ADMIN_NAME);
     }
 
     @Test
     public void testUnpunishSuccess() {
         when(punishmentManager.getById("1")).thenReturn(mockPunishment);
-        when(punishmentManager.removeById("1")).thenReturn(true);
+        when(punishmentManager.removeById("1", TEST_ADMIN_NAME)).thenReturn(true);
 
         String[] args = {"1"};
         unpunishCommand.execute(sender, args);
 
-        verify(punishmentManager).removeById("1");
+        verify(punishmentManager).removeById("1", TEST_ADMIN_NAME);
         assertMessageSent();
     }
 
     @Test
     public void testUnpunishRemovalFailed() {
         when(punishmentManager.getById("1")).thenReturn(mockPunishment);
-        when(punishmentManager.removeById("1")).thenReturn(false);
+        when(punishmentManager.removeById("1", TEST_ADMIN_NAME)).thenReturn(false);
 
         String[] args = {"1"};
         unpunishCommand.execute(sender, args);
 
-        verify(punishmentManager).removeById("1");
+        verify(punishmentManager).removeById("1", TEST_ADMIN_NAME);
         assertMessageSent();
     }
 }

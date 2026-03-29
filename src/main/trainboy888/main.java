@@ -6,10 +6,12 @@ public class main extends Plugin {
     private PunishmentManager punishmentManager;
     private MessageConfig messageConfig;
     private OfflineNameResolver nameResolver;
+	private AuditLogger auditLogger;
 
     @Override
     public void onEnable() {
-	punishmentManager = new PunishmentManager(this);
+	auditLogger = new AuditLogger(this);
+	punishmentManager = new PunishmentManager(this, auditLogger);
 	punishmentManager.load();
 	messageConfig = new MessageConfig(this);
 	messageConfig.load();

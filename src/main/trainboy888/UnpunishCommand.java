@@ -41,7 +41,7 @@ public class UnpunishCommand extends Command implements TabExecutor {
             return;
         }
 
-        boolean removed = manager.removeById(id);
+        boolean removed = manager.removeById(id, sender.getName());
         if (removed) {
             sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.punishment-removed", Map.of(
                     "id", id,

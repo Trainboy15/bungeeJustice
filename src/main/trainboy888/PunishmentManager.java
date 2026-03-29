@@ -16,6 +16,7 @@ import java.util.UUID;
 public class PunishmentManager {
     private final Plugin plugin;
     private final File file;
+    private final AuditLogger auditLogger;
     private int nextId = 1;
 
     private final Map<UUID, Punishment> playerBans = new HashMap<>();
@@ -31,8 +32,13 @@ public class PunishmentManager {
     private final Map<String, PunishmentLocation> punishmentLocations = new HashMap<>();
 
     public PunishmentManager(Plugin plugin) {
+        this(plugin, null);
+    }
+
+    public PunishmentManager(Plugin plugin, AuditLogger auditLogger) {
         this.plugin = plugin;
         this.file = new File(plugin.getDataFolder(), "punishments.yml");
+        this.auditLogger = auditLogger;
     }
     
     private static class PunishmentLocation {
@@ -231,6 +237,10 @@ public class PunishmentManager {
 
         allPunishmentsById.put(id, punishment);
         punishmentLocations.put(id, new PunishmentLocation(type, uuid));
+
+        if (auditLogger != null) {
+            auditLogger.logPunishmentAdded(punishment);
+        }
         
         // Only save persistent punishments (not kicks)
         if (type != PunishmentType.KICK) {
@@ -252,6 +262,11 @@ public class PunishmentManager {
 
         allPunishmentsById.put(id, punishment);
         punishmentLocations.put(id, new PunishmentLocation(type, normalized));
+
+        if (auditLogger != null) {
+            auditLogger.logPunishmentAdded(punishment);
+        }
+
         save();
     }
 
@@ -262,6 +277,11 @@ public class PunishmentManager {
             String id = punishment.getId();
             allPunishmentsById.remove(id);
             punishmentLocations.remove(id);
+
+            if (auditLogger != null) {
+                auditLogger.logPunishmentRemoved(punishment, "SYSTEM");
+            }
+
             save();
         }
         return removed;
@@ -274,6 +294,11 @@ public class PunishmentManager {
             String id = punishment.getId();
             allPunishmentsById.remove(id);
             punishmentLocations.remove(id);
+
+            if (auditLogger != null) {
+                auditLogger.logPunishmentRemoved(punishment, "SYSTEM");
+            }
+
             save();
         }
         return removed;
@@ -286,6 +311,11 @@ public class PunishmentManager {
             String id = punishment.getId();
             allPunishmentsById.remove(id);
             punishmentLocations.remove(id);
+
+            if (auditLogger != null) {
+                auditLogger.logPunishmentRemoved(punishment, "SYSTEM");
+            }
+
             save();
         }
         return removed;
@@ -298,12 +328,21 @@ public class PunishmentManager {
             String id = punishment.getId();
             allPunishmentsById.remove(id);
             punishmentLocations.remove(id);
+
+            if (auditLogger != null) {
+                auditLogger.logPunishmentRemoved(punishment, "SYSTEM");
+            }
+
             save();
         }
         return removed;
     }
 
     public boolean removeById(String id) {
+        return removeById(id, "SYSTEM");
+    }
+
+    public boolean removeById(String id, String removedBy) {
         Punishment punishment = allPunishmentsById.remove(id);
         if (punishment == null) {
             return false;
@@ -341,6 +380,9 @@ public class PunishmentManager {
         }
 
         if (removed) {
+            if (auditLogger != null) {
+                auditLogger.logPunishmentRemoved(punishment, removedBy);
+            }
             save();
         }
         return removed;
@@ -391,6 +433,11 @@ public class PunishmentManager {
             map.remove(key);
             allPunishmentsById.remove(id);
             punishmentLocations.remove(id);
+
+            if (auditLogger != null) {
+                auditLogger.logPunishmentExpired(punishment);
+            }
+
             save();
             return null;
         }
@@ -403,10 +450,16 @@ public class PunishmentManager {
         while (iterator.hasNext()) {
             Map.Entry<T, Punishment> entry = iterator.next();
             if (entry.getValue().isExpired()) {
-                String id = entry.getValue().getId();
+                Punishment expiredPunishment = entry.getValue();
+                String id = expiredPunishment.getId();
                 iterator.remove();
                 allPunishmentsById.remove(id);
                 punishmentLocations.remove(id);
+
+                if (auditLogger != null) {
+                    auditLogger.logPunishmentExpired(expiredPunishment);
+                }
+
                 changed = true;
             }
         }
@@ -423,6 +476,7 @@ public class PunishmentManager {
             Map.Entry<String, Punishment> entry = iterator.next();
             if (entry.getValue().isExpired()) {
                 String id = entry.getKey();
+                Punishment expiredPunishment = entry.getValue();
                 iterator.remove();
                 
                 // Also remove from location tracking and specific maps
@@ -452,6 +506,11 @@ public class PunishmentManager {
                             break;
                     }
                 }
+
+                if (auditLogger != null) {
+                    auditLogger.logPunishmentExpired(expiredPunishment);
+                }
+
                 changed = true;
             }
         }
