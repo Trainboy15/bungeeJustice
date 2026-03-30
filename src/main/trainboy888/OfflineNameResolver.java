@@ -17,6 +17,7 @@ public class OfflineNameResolver {
     private final Plugin plugin;
     private final File cacheFile;
     private final Map<UUID, String> nameCache = new HashMap<>();
+    private final Map<UUID, String> ipCache = new HashMap<>();
 
     public OfflineNameResolver(Plugin plugin) {
         this.plugin = plugin;
@@ -35,8 +36,25 @@ public class OfflineNameResolver {
             for (String uuidKey : configuration.getKeys()) {
                 try {
                     UUID uuid = UUID.fromString(uuidKey);
-                    String name = configuration.getString(uuidKey);
-                    nameCache.put(uuid, name);
+                    Configuration playerData = configuration.getSection(uuidKey);
+                    if (playerData != null) {
+                        String name = playerData.getString("name");
+                        if (name != null && !name.trim().isEmpty()) {
+                            nameCache.put(uuid, name);
+                        }
+
+                        String ip = playerData.getString("ip");
+                        if (ip != null && !ip.trim().isEmpty()) {
+                            ipCache.put(uuid, PunishmentManager.normalizeIp(ip));
+                        }
+                        continue;
+                    }
+
+                    // Backward compatibility with old flat format (uuid: name)
+                    String legacyName = configuration.getString(uuidKey);
+                    if (legacyName != null && !legacyName.trim().isEmpty()) {
+                        nameCache.put(uuid, legacyName);
+                    }
                 } catch (IllegalArgumentException ignored) {
                     // Invalid UUID key, skip
                 }
@@ -49,9 +67,30 @@ public class OfflineNameResolver {
     public void save() {
         try {
             Configuration configuration = new Configuration();
-            for (Map.Entry<UUID, String> entry : nameCache.entrySet()) {
-                configuration.set(entry.getKey().toString(), entry.getValue());
+            for (UUID uuid : nameCache.keySet()) {
+                Configuration playerData = new Configuration();
+                playerData.set("name", nameCache.get(uuid));
+
+                String ip = ipCache.get(uuid);
+                if (ip != null && !ip.trim().isEmpty()) {
+                    playerData.set("ip", ip);
+                }
+
+                configuration.set(uuid.toString(), playerData);
             }
+
+            // Persist IP-only entries if the name is not cached yet.
+            for (Map.Entry<UUID, String> ipEntry : ipCache.entrySet()) {
+                UUID uuid = ipEntry.getKey();
+                if (configuration.get(uuid.toString()) != null) {
+                    continue;
+                }
+
+                Configuration playerData = new Configuration();
+                playerData.set("ip", ipEntry.getValue());
+                configuration.set(uuid.toString(), playerData);
+            }
+
             ConfigurationProvider.getProvider(YamlConfiguration.class).save(configuration, cacheFile);
         } catch (IOException exception) {
             plugin.getLogger().warning("Failed to save name cache: " + exception.getMessage());
@@ -59,8 +98,36 @@ public class OfflineNameResolver {
     }
 
     public void cachePlayer(UUID uuid, String name) {
+        if (uuid == null || name == null || name.trim().isEmpty()) {
+            return;
+        }
+
         if (!nameCache.containsKey(uuid) || !nameCache.get(uuid).equals(name)) {
             nameCache.put(uuid, name);
+            save();
+        }
+    }
+
+    public void cachePlayer(UUID uuid, String name, String ip) {
+        if (uuid == null) {
+            return;
+        }
+
+        boolean changed = false;
+        if (name != null && !name.trim().isEmpty() && !name.equals(nameCache.get(uuid))) {
+            nameCache.put(uuid, name);
+            changed = true;
+        }
+
+        if (ip != null && !ip.trim().isEmpty()) {
+            String normalizedIp = PunishmentManager.normalizeIp(ip);
+            if (!normalizedIp.equals(ipCache.get(uuid))) {
+                ipCache.put(uuid, normalizedIp);
+                changed = true;
+            }
+        }
+
+        if (changed) {
             save();
         }
     }
@@ -69,7 +136,10 @@ public class OfflineNameResolver {
         // First check if online
         ProxiedPlayer online = ProxyServer.getInstance().getPlayer(uuid);
         if (online != null) {
-            cachePlayer(uuid, online.getName());
+            String onlineIp = online.getAddress() != null && online.getAddress().getAddress() != null
+                    ? online.getAddress().getAddress().getHostAddress()
+                    : null;
+            cachePlayer(uuid, online.getName(), onlineIp);
             return online.getName();
         }
 
@@ -84,28 +154,53 @@ public class OfflineNameResolver {
     }
 
     public UUID resolveUUID(String nameOrUuid) {
+        if (nameOrUuid == null || nameOrUuid.trim().isEmpty()) {
+            return null;
+        }
+
+        String normalizedInput = nameOrUuid.trim();
+
         // Try parsing as UUID
         try {
-            return UUID.fromString(nameOrUuid);
+            return UUID.fromString(normalizedInput);
         } catch (IllegalArgumentException ignored) {
             // Not a UUID, continue
         }
 
         // Check if online
-        ProxiedPlayer online = ProxyServer.getInstance().getPlayer(nameOrUuid);
+        ProxiedPlayer online = ProxyServer.getInstance().getPlayer(normalizedInput);
         if (online != null) {
             UUID uuid = online.getUniqueId();
-            cachePlayer(uuid, online.getName());
+            String onlineIp = online.getAddress() != null && online.getAddress().getAddress() != null
+                    ? online.getAddress().getAddress().getHostAddress()
+                    : null;
+            cachePlayer(uuid, online.getName(), onlineIp);
             return uuid;
         }
 
         // Search cache for name match
         for (Map.Entry<UUID, String> entry : nameCache.entrySet()) {
-            if (entry.getValue().equalsIgnoreCase(nameOrUuid)) {
+            if (entry.getValue().equalsIgnoreCase(normalizedInput)) {
                 return entry.getKey();
             }
         }
 
         return null;
+    }
+
+    public String resolveLastIp(String nameOrUuid) {
+        UUID uuid = resolveUUID(nameOrUuid);
+        if (uuid == null) {
+            return null;
+        }
+
+        ProxiedPlayer online = ProxyServer.getInstance().getPlayer(uuid);
+        if (online != null && online.getAddress() != null && online.getAddress().getAddress() != null) {
+            String ip = PunishmentManager.normalizeIp(online.getAddress().getAddress().getHostAddress());
+            cachePlayer(uuid, online.getName(), ip);
+            return ip;
+        }
+
+        return ipCache.get(uuid);
     }
 }

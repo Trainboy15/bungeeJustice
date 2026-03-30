@@ -27,15 +27,19 @@ public class PunishCommand extends Command implements TabExecutor {
     private final boolean temporary;
     private final boolean ipTarget;
 
-    // Constructor for IP-based and temporary punishments
-    public PunishCommand(String name, String permission, PunishmentManager manager, MessageConfig messageConfig, PunishmentType type, boolean temporary, boolean ipTarget) {
+    public PunishCommand(String name, String permission, PunishmentManager manager, MessageConfig messageConfig, OfflineNameResolver nameResolver, PunishmentType type, boolean temporary, boolean ipTarget) {
         super(name, permission);
         this.manager = manager;
         this.messageConfig = messageConfig;
-        this.nameResolver = null;
+        this.nameResolver = nameResolver;
         this.type = type;
         this.temporary = temporary;
         this.ipTarget = ipTarget;
+    }
+
+    // Constructor for IP-based and temporary punishments
+    public PunishCommand(String name, String permission, PunishmentManager manager, MessageConfig messageConfig, PunishmentType type, boolean temporary, boolean ipTarget) {
+        this(name, permission, manager, messageConfig, null, type, temporary, ipTarget);
     }
 
     // Constructor for simple player punishments (kick, warn, note)
@@ -261,6 +265,9 @@ public class PunishCommand extends Command implements TabExecutor {
             InetAddress parsed = InetAddress.getByName(target);
             return parsed.getHostAddress();
         } catch (Exception ignored) {
+            if (nameResolver != null) {
+                return nameResolver.resolveLastIp(target);
+            }
             return null;
         }
     }

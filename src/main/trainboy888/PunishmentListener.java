@@ -39,8 +39,11 @@ public class PunishmentListener implements Listener {
 
     @EventHandler
     public void onPostLogin(PostLoginEvent event) {
-        // Cache the player name for offline name resolution
-        nameResolver.cachePlayer(event.getPlayer().getUniqueId(), event.getPlayer().getName());
+        // Cache identity and last known IP for offline name/IP resolution.
+        String ip = event.getPlayer().getAddress() != null && event.getPlayer().getAddress().getAddress() != null
+                ? event.getPlayer().getAddress().getAddress().getHostAddress()
+                : null;
+        nameResolver.cachePlayer(event.getPlayer().getUniqueId(), event.getPlayer().getName(), ip);
     }
 
     @EventHandler
