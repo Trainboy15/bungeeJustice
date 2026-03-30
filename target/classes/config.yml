@@ -40,9 +40,9 @@ messages:
   reload-success: '&aReloaded bungeeJustice config.'
 
 screens:
-  ban: '&cYou are banned on this network.\n&7Reason: &f{reason}\n&7By: &f{actor}\n&7Length: &f{duration}\n&bAppeal: https://discord.gg/GFsrYZqEGh'
-  ip-ban: '&cYou are IP-banned on this network.\n&7Reason: &f{reason}\n&7By: &f{actor}\n&7Length: &f{duration}\n&bAppeal: https://discord.gg/GFsrYZqEGh'
-  mute: '&cYou are muted on this network.\n&7Reason: &f{reason}\n&7By: &f{actor}\n&7Length: &f{duration}\n&bAppeal: https://discord.gg/GFsrYZqEGh'
-  ip-mute: '&cYour IP is muted on this network.\n&7Reason: &f{reason}\n&7By: &f{actor}\n&7Length: &f{duration}\n&bAppeal: https://discord.gg/GFsrYZqEGh'
+  ban: '&cYou are banned on this network.\n&7Reason: &f{reason}\n&7By: &f{actor}\n&7Length: &f{duration}\n&bAppeal: https://discord.gg/yourappealdc'
+  ip-ban: '&cYou are banned on this network.\n&7Reason: &f{reason}\n&7By: &f{actor}\n&7Length: &f{duration}\n&bAppeal: https://discord.gg/yourappealdc'
+  mute: '&cYou are muted on this network.\n&7Reason: &f{reason}\n&7By: &f{actor}\n&7Length: &f{duration}\n&bAppeal: https://discord.gg/yourappealdc'
+  ip-mute: '&cYour are muted on this network.\n&7Reason: &f{reason}\n&7By: &f{actor}\n&7Length: &f{duration}\n&bAppeal: https://discord.gg/yourappealdc'
   kick: '&cYou have been kicked from the network.\n&7Reason: &f{reason}\n&7By: &f{actor}'
-  warn: '&eYou have been warned.\n&7Reason: &f{reason}\n&7By: &f{actor}'
+  warn: '&eYou have been warned.\n&7Reason: &f{reason}\n&7By: &f{actor}\n&bPlease follow the rules to avoid further punishment\|n&bAppeal: https://discord.gg/yourappealdc'
