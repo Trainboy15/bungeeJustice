@@ -6,6 +6,7 @@ import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.config.Configuration;
 import net.md_5.bungee.config.ConfigurationProvider;
 import net.md_5.bungee.config.YamlConfiguration;
+import net.md_5.bungee.api.plugin.PluginManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -66,6 +67,11 @@ public class OfflineNameResolver {
 
     public void save() {
         try {
+            // Ensure the data folder exists before saving
+            if (!plugin.getDataFolder().exists()) {
+                plugin.getDataFolder().mkdirs();
+            }
+
             Configuration configuration = new Configuration();
             for (UUID uuid : nameCache.keySet()) {
                 Configuration playerData = new Configuration();

@@ -3,15 +3,21 @@ package trainboy888;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.plugin.Command;
+import net.md_5.bungee.api.plugin.Plugin;
+import net.md_5.bungee.api.plugin.PluginManager;
 
 import java.util.Map;
 
 public class BungeeJusticeCommand extends Command {
+    private final Plugin plugin;
     private final MessageConfig messageConfig;
+    private final PunishmentManager punishmentManager;
 
-    public BungeeJusticeCommand(MessageConfig messageConfig) {
+    public BungeeJusticeCommand(Plugin plugin, MessageConfig messageConfig, PunishmentManager punishmentManager) {
         super("bjustice", "bungeejustice.reload", "bungeejustice");
+        this.plugin = plugin;
         this.messageConfig = messageConfig;
+        this.punishmentManager = punishmentManager;
     }
 
     @Override
@@ -30,14 +36,18 @@ public class BungeeJusticeCommand extends Command {
             sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.help-note", Map.of("command", "note"))));
             return;
         }
-        if (args.length != 1 || !args[0].equalsIgnoreCase("reload")) {
-            sender.sendMessage(new TextComponent(messageConfig.get("messages.usage-reload")));
+        if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
+            // Reload the message/config file and punishment manager
+            messageConfig.load();
+            punishmentManager.load();
+
+            sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.reload-success", Map.of(
+                    "sender", sender.getName()
+            ))));
             return;
         }
 
-        messageConfig.load();
-        sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.reload-success", Map.of(
-                "sender", sender.getName()
-        ))));
+        sender.sendMessage(new TextComponent(messageConfig.get("messages.help-header")));
+        sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.help-punish", Map.of("command", "ban/mute/ipban/ipmute"))));
     }
 }

@@ -7,3 +7,4 @@
 *.sh
 TESTING.md
 src/main/
+*.json
