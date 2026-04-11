@@ -36,8 +36,9 @@ public class OfflineNameResolver {
             for (String uuidKey : configuration.getKeys()) {
                 try {
                     UUID uuid = UUID.fromString(uuidKey);
-                    Configuration playerData = configuration.getSection(uuidKey);
-                    if (playerData != null) {
+                    Object value = configuration.get(uuidKey);
+                    if (value instanceof Configuration) {
+                        Configuration playerData = (Configuration) value;
                         String name = playerData.getString("name");
                         if (name != null && !name.trim().isEmpty()) {
                             nameCache.put(uuid, name);
@@ -47,13 +48,12 @@ public class OfflineNameResolver {
                         if (ip != null && !ip.trim().isEmpty()) {
                             ipCache.put(uuid, PunishmentManager.normalizeIp(ip));
                         }
-                        continue;
-                    }
-
-                    // Backward compatibility with old flat format (uuid: name)
-                    String legacyName = configuration.getString(uuidKey);
-                    if (legacyName != null && !legacyName.trim().isEmpty()) {
-                        nameCache.put(uuid, legacyName);
+                    } else if (value instanceof String) {
+                        // Backward compatibility with old flat format (uuid: name)
+                        String legacyName = (String) value;
+                        if (!legacyName.trim().isEmpty()) {
+                            nameCache.put(uuid, legacyName);
+                        }
                     }
                 } catch (IllegalArgumentException ignored) {
                     // Invalid UUID key, skip
