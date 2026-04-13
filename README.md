@@ -26,6 +26,7 @@ Network-wide BungeeCord moderation plugin for bans, mutes, IP bans, temporary pu
 - `/kick <player> [reason]` - Kick a player
 - `/warn <player> [reason]` - Warn a player
 - `/note <player> [note]` - Add a note about a player
+- `/check <player|uuid>` - View active bans, mutes, warns, and notes for a player
 - `/banlist [id]` - View active punishments or details of a specific punishment
 - `/bjustice reload` - Reload plugin configuration
 
@@ -41,6 +42,7 @@ Duration examples: `30m`, `12h`, `7d`, `2w`
 - `bungeejustice.kick`
 - `bungeejustice.warn`
 - `bungeejustice.note`
+- `bungeejustice.check`
 - `bungeejustice.ipban`
 - `bungeejustice.tempipban`
 - `bungeejustice.ipmute`

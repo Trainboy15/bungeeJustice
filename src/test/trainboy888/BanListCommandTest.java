@@ -3,8 +3,10 @@ package trainboy888;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import net.md_5.bungee.api.chat.TextComponent;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -65,5 +67,13 @@ public class BanListCommandTest extends CommandTestBase {
         assertEquals("1", headerMapCaptor.getValue().get("count"));
 
         verify(messageConfig, times(1)).getFormatted(eq("messages.punishlist-entry"), anyMap());
+
+        ArgumentCaptor<TextComponent> messageCaptor = ArgumentCaptor.forClass(TextComponent.class);
+        verify(sender, times(2)).sendMessage(messageCaptor.capture());
+        List<TextComponent> sentMessages = messageCaptor.getAllValues();
+
+        TextComponent entryMessage = sentMessages.get(1);
+        assertEquals("/banlist 2", entryMessage.getClickEvent().getValue());
+        assertEquals("Click to view details for punishment #2", entryMessage.getHoverEvent().getValue().get(0).toPlainText());
     }
 }

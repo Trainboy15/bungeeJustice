@@ -7,11 +7,15 @@ import net.md_5.bungee.config.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class PunishmentManager {
     private final Plugin plugin;
@@ -30,6 +34,51 @@ public class PunishmentManager {
     
     // Track which map and key each punishment ID belongs to
     private final Map<String, PunishmentLocation> punishmentLocations = new HashMap<>();
+    private static final Pattern AUDIT_PATTERN = Pattern.compile(
+            "^\\[[^]]+\\] action=(\\S+) id=(\\S+) type=(\\S+) target=(.*?) actor=(.*?) reason=(.*?) createdAt=(\\d+) expiresAt=(-?\\d+)(?: removedBy=(\\S+))?$"
+    );
+
+    public static class HistoricalPunishment {
+        private final String id;
+        private final PunishmentType type;
+        private final String reason;
+        private final String actor;
+        private final long expiresAt;
+        private final String status;
+
+        public HistoricalPunishment(String id, PunishmentType type, String reason, String actor, long expiresAt, String status) {
+            this.id = id;
+            this.type = type;
+            this.reason = reason;
+            this.actor = actor;
+            this.expiresAt = expiresAt;
+            this.status = status;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public PunishmentType getType() {
+            return type;
+        }
+
+        public String getReason() {
+            return reason;
+        }
+
+        public String getActor() {
+            return actor;
+        }
+
+        public long getExpiresAt() {
+            return expiresAt;
+        }
+
+        public String getStatus() {
+            return status;
+        }
+    }
 
     public PunishmentManager(Plugin plugin) {
         this(plugin, null);
@@ -392,6 +441,64 @@ public class PunishmentManager {
         return allPunishmentsById.get(id);
     }
 
+    public Map<String, HistoricalPunishment> getHistoricalPlayerPunishments(UUID uuid, String playerName) {
+        Map<String, HistoricalPunishment> results = new LinkedHashMap<>();
+        File auditFile = new File(plugin.getDataFolder(), "audit.log");
+        if (!auditFile.exists()) {
+            return results;
+        }
+
+        String uuidString = uuid.toString();
+        String normalizedName = playerName == null ? "" : playerName.trim().toLowerCase();
+
+        try {
+            List<String> lines = Files.readAllLines(auditFile.toPath());
+            for (String line : lines) {
+                Matcher matcher = AUDIT_PATTERN.matcher(line);
+                if (!matcher.matches()) {
+                    continue;
+                }
+
+                String action = matcher.group(1);
+                String id = matcher.group(2);
+                String typeValue = matcher.group(3);
+                String target = matcher.group(4);
+                String actor = matcher.group(5);
+                String reason = matcher.group(6);
+                long expiresAt;
+                try {
+                    expiresAt = Long.parseLong(matcher.group(8));
+                } catch (NumberFormatException ignored) {
+                    expiresAt = -1L;
+                }
+
+                PunishmentType type;
+                try {
+                    type = PunishmentType.valueOf(typeValue);
+                } catch (IllegalArgumentException ignored) {
+                    continue;
+                }
+
+                if (type != PunishmentType.BAN && type != PunishmentType.MUTE && type != PunishmentType.WARN && type != PunishmentType.NOTE) {
+                    continue;
+                }
+
+                String normalizedTarget = target == null ? "" : target.trim();
+                boolean matchesUuid = normalizedTarget.equalsIgnoreCase(uuidString);
+                boolean matchesName = !normalizedName.isEmpty() && normalizedTarget.equalsIgnoreCase(normalizedName);
+                if (!matchesUuid && !matchesName) {
+                    continue;
+                }
+
+                results.put(id, new HistoricalPunishment(id, type, reason, actor, expiresAt, mapAuditActionToStatus(action)));
+            }
+        } catch (IOException exception) {
+            plugin.getLogger().warning("Failed to read audit log history: " + exception.getMessage());
+        }
+
+        return results;
+    }
+
     public Map<String, Punishment> getAllPunishments() {
         purgeExpiredAll();
         return new LinkedHashMap<>(allPunishmentsById);
@@ -403,6 +510,14 @@ public class PunishmentManager {
 
     public Punishment getActivePlayerMute(UUID uuid) {
         return getActive(playerMutes, uuid);
+    }
+
+    public Punishment getActivePlayerWarn(UUID uuid) {
+        return getActive(playerWarns, uuid);
+    }
+
+    public Punishment getActivePlayerNote(UUID uuid) {
+        return getActive(playerNotes, uuid);
     }
 
     public Punishment getActiveIpBan(String ip) {
@@ -522,5 +637,18 @@ public class PunishmentManager {
 
     public static String normalizeIp(String ip) {
         return ip.trim().toLowerCase();
+    }
+
+    private String mapAuditActionToStatus(String action) {
+        if ("EXPIRE".equalsIgnoreCase(action)) {
+            return "Expired";
+        }
+        if ("REMOVE".equalsIgnoreCase(action)) {
+            return "Removed";
+        }
+        if ("APPLY".equalsIgnoreCase(action)) {
+            return "Applied";
+        }
+        return "Past";
     }
 }

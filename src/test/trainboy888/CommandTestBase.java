@@ -52,6 +52,7 @@ public class CommandTestBase {
         when(sender.hasPermission("bungeejustice.kick")).thenReturn(true);
         when(sender.hasPermission("bungeejustice.warn")).thenReturn(true);
         when(sender.hasPermission("bungeejustice.note")).thenReturn(true);
+        when(sender.hasPermission("bungeejustice.check")).thenReturn(true);
         when(sender.hasPermission("bungeejustice.unpunish")).thenReturn(true);
         when(sender.hasPermission("bungeejustice.banlist")).thenReturn(true);
         when(sender.hasPermission("bungeejustice.reload")).thenReturn(true);

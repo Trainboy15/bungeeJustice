@@ -1,6 +1,5 @@
 package trainboy888;
 
-import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -98,11 +97,12 @@ public class PunishCommand extends Command implements TabExecutor {
 
             manager.punishIp(ip, type, reason, actor, durationMillis);
             kickMatchingPlayers(type, ip, reason, actor, durationMillis);
+            broadcastPunishment(readableType(type), "IP " + ip, actor, reason, durationMillis);
 
-                sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.applied-ip", Map.of(
+            sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.applied-ip", Map.of(
                     "punishment", readableType(type),
                     "target", ip
-                ))));
+            ))));
             return;
         }
 
@@ -121,6 +121,8 @@ public class PunishCommand extends Command implements TabExecutor {
                 online.disconnect(new TextComponent(messageConfig.formatPunishmentScreen("screens.ban", ban)));
             }
         }
+
+        broadcastPunishment(readableType(type), args[0], actor, reason, durationMillis);
 
         sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.applied-player", Map.of(
                 "punishment", readableType(type),
@@ -163,6 +165,7 @@ public class PunishCommand extends Command implements TabExecutor {
             sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.kicked-player", Map.of(
                     "target", online.getName()
             ))));
+            broadcastPunishment("kick", online.getName(), actor, reason, -1L);
             return;
         }
 
@@ -173,6 +176,8 @@ public class PunishCommand extends Command implements TabExecutor {
         sender.sendMessage(new TextComponent(messageConfig.getFormatted(messageKey, Map.of(
                 "target", nameResolver.resolveName(uuid)
         ))));
+
+        broadcastPunishment(type == PunishmentType.WARN ? "warn" : "note", nameResolver.resolveName(uuid), actor, reason, -1L);
 
         // Notify player if online (only for warn)
         if (type == PunishmentType.WARN) {
@@ -240,6 +245,12 @@ public class PunishCommand extends Command implements TabExecutor {
     private UUID resolveUuid(String target) {
         ProxiedPlayer online = ProxyServer.getInstance().getPlayer(target);
         if (online != null) {
+            if (nameResolver != null) {
+                String onlineIp = online.getAddress() != null && online.getAddress().getAddress() != null
+                        ? online.getAddress().getAddress().getHostAddress()
+                        : null;
+                nameResolver.cachePlayer(online.getUniqueId(), online.getName(), onlineIp);
+            }
             return online.getUniqueId();
         }
 
@@ -258,7 +269,11 @@ public class PunishCommand extends Command implements TabExecutor {
         ProxiedPlayer online = ProxyServer.getInstance().getPlayer(target);
         if (online != null) {
             InetSocketAddress address = online.getAddress();
-            return address.getAddress().getHostAddress();
+            String onlineIp = address.getAddress().getHostAddress();
+            if (nameResolver != null) {
+                nameResolver.cachePlayer(online.getUniqueId(), online.getName(), onlineIp);
+            }
+            return onlineIp;
         }
 
         try {
@@ -305,6 +320,29 @@ public class PunishCommand extends Command implements TabExecutor {
                 return temporary ? "temporary IP mute" : "IP mute";
             default:
                 return "punishment";
+        }
+    }
+
+    private void broadcastPunishment(String punishment, String target, String actor, String reason, long durationMillis) {
+        String duration = durationMillis <= 0
+                ? "Permanent"
+                : DurationParser.formatDuration(durationMillis);
+
+        String message = messageConfig.getFormatted("messages.punishment-broadcast", Map.of(
+                "punishment", punishment,
+                "target", target,
+                "actor", actor,
+                "reason", reason,
+                "duration", duration
+        ));
+
+        if (message == null || message.trim().isEmpty()) {
+            message = actor + " applied " + punishment + " to " + target + " (" + reason + ", " + duration + ")";
+        }
+
+        TextComponent broadcast = new TextComponent(message);
+        for (ProxiedPlayer player : ProxyServer.getInstance().getPlayers()) {
+            player.sendMessage(broadcast);
         }
     }
 }

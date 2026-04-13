@@ -4,7 +4,6 @@ import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.plugin.Command;
 import net.md_5.bungee.api.plugin.Plugin;
-import net.md_5.bungee.api.plugin.PluginManager;
 
 import java.util.Map;
 
@@ -34,6 +33,7 @@ public class BungeeJusticeCommand extends Command {
             sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.help-kick", Map.of("command", "kick"))));
             sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.help-warn", Map.of("command", "warn"))));
             sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.help-note", Map.of("command", "note"))));
+            sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.help-check", Map.of("command", "check"))));
             return;
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {

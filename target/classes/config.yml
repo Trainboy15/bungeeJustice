@@ -11,8 +11,10 @@ messages:
   usage-kick: '&e/{command} <target> [reason]'
   usage-warn: '&e/{command} <target> [reason]'
   usage-note: '&e/{command} <target> [reason]'
+  usage-check: '&e/{command} <target>'
   applied-player: '&aApplied {punishment} to {target}.'
   applied-ip: '&aApplied {punishment} to IP {target}.'
+  punishment-broadcast: '&c{actor} &7issued a &c{punishment} &7to &f{target} &8| &7Reason: &f{reason} &8| &7Length: &f{duration}'
   kicked-player: '&aKicked {target}.'
   warned-player: '&aWarned {target}.'
   noted-player: '&aAdded note for {target}.'
@@ -29,6 +31,8 @@ messages:
   banlist-player-entry: '&7- &f{target} &8| &7Reason: &f{reason} &8| &7By: &f{actor} &8| &7Length: &f{duration}'
   banlist-ip-section: '&eIP bans:'
   banlist-ip-entry: '&7- &f{target} &8| &7Reason: &f{reason} &8| &7By: &f{actor} &8| &7Length: &f{duration}'
+  check-header: '&6Active / Past punishments for &f{player}&6: &f{count}'
+  check-entry: '&7[&f{id}&7] &f{type} &8(&f{status}&8) &8| &7Reason: &f{reason} &8| &7By: &f{actor} &8| &7Length: &f{duration}'
   usage-reload: '&e/bjustice reload'
   help-header: '&6bungeeJustice Commands:'
   help-punish: '&e/{command} <target> [reason] &7\n- Apply a punishment to a player or IP.'
@@ -37,6 +41,7 @@ messages:
   help-kick: '&e/{command} <target> [reason]\n &7Kick a player from the network.'
   help-warn: '&e/{command} <target> [reason]\n &7Warn a player on the network.'
   help-note: '&e/{command} <target> [reason]\n &7Add a note to a player on the network.'
+  help-check: '&e/{command} <target>\n &7View a player''s active bans, mutes, warns, and notes.'
   reload-success: '&aReloaded bungeeJustice config.'
 
 screens:

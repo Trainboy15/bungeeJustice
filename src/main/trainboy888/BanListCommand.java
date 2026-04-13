@@ -1,9 +1,10 @@
 package trainboy888;
 
 import net.md_5.bungee.api.CommandSender;
-import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.api.chat.hover.content.Text;
 import net.md_5.bungee.api.plugin.Command;
 
 import java.util.Map;
@@ -68,40 +69,69 @@ public class BanListCommand extends Command {
                 "count", String.valueOf(displayCount)
         ))));
 
-        for (Map.Entry<String, Punishment> entry : allPunishments.entrySet()) {
+        allPunishments.entrySet().stream()
+                .sorted((left, right) -> comparePunishmentIdsDesc(left.getValue().getId(), right.getValue().getId()))
+                .forEach(entry -> {
             Punishment punishment = entry.getValue();
             
             // Skip KICK punishments
             if (punishment.getType() == PunishmentType.KICK) {
-                continue;
+                return;
             }
             
             String typeDisplayName = getPunishmentTypeName(punishment.getType());
             String targetDisplay = getTargetDisplay(punishment);
-            
-            sender.sendMessage(new TextComponent(messageConfig.getFormatted("messages.punishlist-entry", Map.of(
+
+            String entryMessage = messageConfig.getFormatted("messages.punishlist-entry", Map.of(
                     "id", punishment.getId(),
                     "player", targetDisplay,
                     "type", typeDisplayName,
                     "reason", punishment.getReason(),
                     "actor", punishment.getActor(),
                     "duration", formatDuration(punishment)
-            ))));
+            ));
+
+            sender.sendMessage(createInteractiveEntry(entryMessage, punishment.getId()));
+        });
+    }
+
+    private int comparePunishmentIdsDesc(String leftId, String rightId) {
+        try {
+            return Long.compare(Long.parseLong(rightId), Long.parseLong(leftId));
+        } catch (NumberFormatException ignored) {
+            return rightId.compareTo(leftId);
         }
     }
 
+    private TextComponent createInteractiveEntry(String entryMessage, String punishmentId) {
+        TextComponent entryComponent = new TextComponent(entryMessage);
+        entryComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                new Text("Click to view details for punishment #" + punishmentId)));
+        entryComponent.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
+                "/banlist " + punishmentId));
+        return entryComponent;
+    }
+
     private String getTargetDisplay(Punishment punishment) {
-        // Check if it's an IP punishment
+        // Resolve IP punishments to a known player name when available.
         if (punishment.getType() == PunishmentType.IP_BAN || punishment.getType() == PunishmentType.IP_MUTE) {
-            return punishment.getTarget(); // Return IP address directly
+            String ip = punishment.getTarget();
+            String resolvedName = nameResolver.resolveNameByIp(ip);
+            if (resolvedName != null) {
+                return resolvedName + " (" + ip + ")";
+            }
+            return ip;
         }
-        
-        // For player punishments, resolve UUID to name
+
+        // For player punishments, resolve UUID to name.
         UUID playerUUID = punishment.getPlayerUUID();
         if (playerUUID != null) {
-            return nameResolver.resolveName(playerUUID);
+            String resolvedName = nameResolver.resolveName(playerUUID);
+            if (!resolvedName.equals(playerUUID.toString())) {
+                return resolvedName;
+            }
         }
-        
+
         // Fallback to target string
         return punishment.getTarget();
     }

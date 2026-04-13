@@ -8,3 +8,4 @@
 TESTING.md
 src/main/
 *.json
+/testing/

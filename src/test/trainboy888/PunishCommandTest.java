@@ -1,11 +1,13 @@
 package trainboy888;
 
 import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockedStatic;
 
+import java.util.List;
 import java.net.InetSocketAddress;
 
 import static org.junit.Assert.assertEquals;
@@ -96,5 +98,25 @@ public class PunishCommandTest extends CommandTestBase {
                 anyString(),
                 anyLong()
         );
+    }
+
+    @Test
+    public void testBanBroadcastsToOnlinePlayers() {
+        ProxiedPlayer audienceOne = mock(ProxiedPlayer.class);
+        ProxiedPlayer audienceTwo = mock(ProxiedPlayer.class);
+        ProxyServer proxy = mock(ProxyServer.class);
+
+        when(proxy.getPlayer(TEST_PLAYER_NAME)).thenReturn(mockPlayer);
+        when(proxy.getPlayer(TEST_PLAYER_UUID)).thenReturn(mockPlayer);
+        when(proxy.getPlayers()).thenReturn(List.of(audienceOne, audienceTwo));
+        when(messageConfig.getFormatted(eq("messages.punishment-broadcast"), anyMap())).thenReturn("Broadcast");
+
+        try (MockedStatic<ProxyServer> mockedProxy = mockStatic(ProxyServer.class)) {
+            mockedProxy.when(ProxyServer::getInstance).thenReturn(proxy);
+            banCommand.execute(sender, new String[]{TEST_PLAYER_NAME, "Cheating"});
+        }
+
+        verify(audienceOne).sendMessage(any(TextComponent.class));
+        verify(audienceTwo).sendMessage(any(TextComponent.class));
     }
 }

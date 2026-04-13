@@ -6,7 +6,6 @@ import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.config.Configuration;
 import net.md_5.bungee.config.ConfigurationProvider;
 import net.md_5.bungee.config.YamlConfiguration;
-import net.md_5.bungee.api.plugin.PluginManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -208,5 +207,38 @@ public class OfflineNameResolver {
         }
 
         return ipCache.get(uuid);
+    }
+
+    public String resolveNameByIp(String ip) {
+        if (ip == null || ip.trim().isEmpty()) {
+            return null;
+        }
+
+        String normalizedIp = PunishmentManager.normalizeIp(ip);
+
+        for (ProxiedPlayer player : ProxyServer.getInstance().getPlayers()) {
+            if (player.getAddress() == null || player.getAddress().getAddress() == null) {
+                continue;
+            }
+
+            String onlineIp = PunishmentManager.normalizeIp(player.getAddress().getAddress().getHostAddress());
+            if (normalizedIp.equals(onlineIp)) {
+                cachePlayer(player.getUniqueId(), player.getName(), onlineIp);
+                return player.getName();
+            }
+        }
+
+        for (Map.Entry<UUID, String> entry : ipCache.entrySet()) {
+            if (!normalizedIp.equals(entry.getValue())) {
+                continue;
+            }
+
+            String cachedName = nameCache.get(entry.getKey());
+            if (cachedName != null && !cachedName.trim().isEmpty()) {
+                return cachedName;
+            }
+        }
+
+        return null;
     }
 }

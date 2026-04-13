@@ -59,6 +59,8 @@ public class main extends Plugin {
 	getProxy().getPluginManager().registerCommand(this,
 		new BanListCommand(punishmentManager, messageConfig, nameResolver));
 	getProxy().getPluginManager().registerCommand(this,
+		new CheckCommand(punishmentManager, messageConfig, nameResolver));
+	getProxy().getPluginManager().registerCommand(this,
 		new BungeeJusticeCommand(this, messageConfig, punishmentManager));
 
 	getLogger().info("bungeeJustice enabled.");
