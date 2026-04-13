@@ -29,6 +29,7 @@ Network-wide BungeeCord moderation plugin for bans, mutes, IP bans, temporary pu
 - `/check <player|uuid>` - View active bans, mutes, warns, and notes for a player
 - `/banlist [id]` - View active punishments or details of a specific punishment
 - `/bjustice reload` - Reload plugin configuration
+- `/check <player>` - Shows active and past punishments for a player
 
 Duration examples: `30m`, `12h`, `7d`, `2w`
 
