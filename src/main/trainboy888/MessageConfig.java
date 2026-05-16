@@ -61,6 +61,7 @@ public class MessageConfig {
         Map<String, String> placeholders = new HashMap<>();
         placeholders.put("reason", punishment.getReason());
         placeholders.put("actor", punishment.getActor());
+        placeholders.put("id", punishment.getId());
 
         String duration = punishment.isPermanent()
                 ? "Permanent"
@@ -122,9 +123,9 @@ public class MessageConfig {
                 + "  reload-success: '&aReloaded bungeeJustice config.'\\n"
                 + "screens:\n"
                 + "  ban: '&cYou are banned on this network.\\n&7Reason: &f{reason}\\n&7By: &f{actor}\\n&7Length: &f{duration}'\n"
-                + "  ip-ban: '&cYou are IP-banned on this network.\\n&7Reason: &f{reason}\\n&7By: &f{actor}\\n&7Length: &f{duration}'\n"
+                + "  ip-ban: '&cYou are banned on this network.\\n&7Reason: &f{reason}\\n&7By: &f{actor}\\n&7Length: &f{duration}'\n"
                 + "  mute: '&cYou are muted on this network.\\n&7Reason: &f{reason}\\n&7By: &f{actor}\\n&7Length: &f{duration}'\n"
-                + "  ip-mute: '&cYour IP is muted on this network.\\n&7Reason: &f{reason}\\n&7By: &f{actor}\\n&7Length: &f{duration}'\n";
+                + "  ip-mute: '&cYour are muted on this network.\\n&7Reason: &f{reason}\\n&7By: &f{actor}\\n&7Length: &f{duration}'\n";
 
         try (FileOutputStream output = new FileOutputStream(configFile)) {
             output.write(defaults.getBytes(StandardCharsets.UTF_8));
