@@ -2,7 +2,12 @@
 
 Network-wide BungeeCord moderation plugin for bans, mutes, IP bans, temporary punishments, and removals.
 <br>
-![bStats Servers](https://img.shields.io/bstats/servers/34513?style=for-the-badge&logo=https%3A%2F%2Fbstats.org%2F_app%2Fimmutable%2Fassets%2Fgamehosting-gradient.DsibRZuC.png)
+<div align="center" style="display: flex; justify-content: space-between; gap: 15px; ">
+   ![bStats Servers](https://img.shields.io/bstats/servers/34513?style=for-the-badge) 
+   ![bStats Players](https://img.shields.io/bstats/players/34513?style=for-the-badge)
+   ![GitHub Downloads](https://img.shields.io/github/downloads/TrainBoy15/bungeeJustice/total?style=for-the-badge)
+</div>
+
 
 
 ## Features
