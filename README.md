@@ -3,9 +3,9 @@
 Network-wide BungeeCord moderation plugin for bans, mutes, IP bans, temporary punishments, and removals.
 <br>
 <div align="center" style="display: flex; justify-content: space-between; gap: 15px; ">
-   <img src=https://img.shields.io/bstats/servers/34513?style=for-the-badge<img>
-   <img src=https://img.shields.io/bstats/players/34513?style=for-the-badge<img>
-   <img src=https://img.shields.io/github/downloads/TrainBoy15/bungeeJustice/total?style=for-the-badge<img>
+   <img src='https://img.shields.io/bstats/servers/34513?style=for-the-badge'><img>
+   <img src='https://img.shields.io/bstats/players/34513?style=for-the-badge'><img>
+   <img src='https://img.shields.io/github/downloads/TrainBoy15/bungeeJustice/total?style=for-the-badge'><img>
 </div>
 
 
