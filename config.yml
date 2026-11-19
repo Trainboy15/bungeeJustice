@@ -22,6 +22,7 @@ messages:
   punishment-removed: '&aRemoved {type} punishment with ID: {id}.'
   punishment-removal-failed: '&cFailed to remove punishment with ID: {id}'
   punishment-info: '&6Punishment Info:\n&7ID: &f{id}\n&7Player: &f{player}\n&7Type: &f{type}\n&7Reason: &f{reason}\n&7By: &f{actor}\n&7Created: &f{created}\n&7Duration: &f{duration}'
+  punishment-broadcast: '&b&l! &f{actor} {type} {player} for {reason} ({duration})'
   punishlist-empty: '&eThere are no active punishments.'
   punishlist-header: '&6Active punishments: &f{count}\n &f[ID] Player - Type | Reason | By | Length'
   punishlist-entry: '&7[&f{id}&7] &f{player} &8- &f{type} &8| &7Reason: &f{reason} &8| &7By: &f{actor} &8| &7Length: &f{duration}'
@@ -44,7 +45,20 @@ messages:
   help-note: '&e/{command} <target> [reason]\n &7Add a note to a player on the network.'
   help-check: '&e/{command} <target>\n &7View a player''s active bans, mutes, warns, and notes.'
   reload-success: '&aReloaded bungeeJustice config.'
-
+discord-webhook:
+  enabled: false
+  url: "YOUR_ID"
+  username: "Punishment Logs"
+  avatar-url: ""
+  embed:
+    title: "Punishment Applied: {punishment}"
+    color: 15158332 # Decimal color code (15158332 = Red)
+    description: |
+      **Player:** {target}
+      **Staff:** {actor}
+      **Reason:** {reason}
+      **Duration:** {duration}
+    footer: "Server Moderation"
 screens:
   ban: '&cYou are banned on this network.\n&7Reason: &f{reason}\n&7By: &f{actor}\n&7Length: &f{duration}\n&7ID: &f{id}\n&bAppeal: https://discord.gg/yourappealdc'
   ip-ban: '&cYou are banned on this network.\n&7Reason: &f{reason}\n&7By: &f{actor}\n&7Length: &f{duration}\n&7ID: &f{id}\n&bAppeal: https://discord.gg/yourappealdc'

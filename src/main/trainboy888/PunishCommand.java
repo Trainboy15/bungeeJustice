@@ -324,25 +324,26 @@ public class PunishCommand extends Command implements TabExecutor {
     }
 
     private void broadcastPunishment(String punishment, String target, String actor, String reason, long durationMillis) {
-        String duration = durationMillis <= 0
-                ? "Permanent"
-                : DurationParser.formatDuration(durationMillis);
+        String duration = durationMillis <= 0 ? "Permanent" : DurationParser.formatDuration(durationMillis);
 
         String message = messageConfig.getFormatted("messages.punishment-broadcast", Map.of(
-                "punishment", punishment,
-                "target", target,
-                "actor", actor,
-                "reason", reason,
-                "duration", duration
+            "punishment", punishment,
+            "target", target,
+            "actor", actor,
+            "reason", reason,
+            "duration", duration
         ));
 
         if (message == null || message.trim().isEmpty()) {
             message = actor + " applied " + punishment + " to " + target + " (" + reason + ", " + duration + ")";
         }
 
-        TextComponent broadcast = new TextComponent(message);
+        // Converts legacy color codes (§ / &) properly for BungeeCord
+        BaseComponent[] broadcast = TextComponent.fromLegacyText(message);
         for (ProxiedPlayer player : ProxyServer.getInstance().getPlayers()) {
             player.sendMessage(broadcast);
         }
+        sendDiscordWebhook(punishment, target, actor, reason, duration);
     }
+
 }
